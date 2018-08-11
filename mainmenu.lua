@@ -214,6 +214,7 @@ local function get_category_entry(category_name)
 end
 
 local function file_callback(programs)
+  for _, program in pairs(programs) do
     local entry = entry_create_from_program(program)
 
     local categories = program.Categories
@@ -236,7 +237,7 @@ local function file_callback(programs)
     else
       table.insert(mainmenu.menutree, entry)
     end
-  end
+    end
 end
 
 local function input_handler_state()
