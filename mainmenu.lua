@@ -24,8 +24,6 @@ local mainmenu = {
   },
   box = nil,
   mainmenuwidget = nil,
-  extensionbox = nil,
-  extensionwidget = nil,
   listwidget = nil,
   categories = {},
   displaystate = {
@@ -33,8 +31,6 @@ local mainmenu = {
     extensions = {}
   }
 }
-
-local categories = {}
 
 --forward function decleartions
 local update_tree_menu, log
@@ -53,71 +49,13 @@ local function itemheight(items)
   return beautiful.menu_height * items
 end
 
-local function set_display_entries(entries)
 
-  mainmenu.listwidget:reset()
-  for i, entry in ipairs(entries) do
-    entry.display_item.point =  {y = itemheight(i-1), x = 0}
-    entry.slot = #entries -i 
-    mainmenu.listwidget:add(entry.display_item)
-  end
-
+local function mainmenuheight()
+  return itemheight(2 + min(#mainmenu.menutree, settings.desktop.startmenuentries))
 end
 
-local function open_extension_menu(entries, parent)
-  mainmenu.extensionwidget:reset()
-
-  for i, entry in ipairs(entries) do
-    entry.display_item.point = {y = itemheight(i-1), x = 0}
-    mainmenu.extensionwidget:add(entry.display_item)
-  end
-
-
-  --+1 for array start, +2 for bottom of menu, +1 for menu bar
-  local lower_slot = math.max(parent.slot - #entries + 4 , 1)
-  local upper_slot = lower_slot + #entries
-
-  local height = itemheight(#entries)
-
-  local s =  awful.screen.focused()
-  --last - menu_height is making it show up covering arrow, cannot figure out how to make it catch the actual transition to side menu without making them overlap. Fear a real fix will require some kind of rewrite
-  --TODO: make extension menu not overlap
-  mainmenu.extensionbox.x = s.geometry.x + beautiful.menu_width -- - beautiful.menu_height 
-  mainmenu.extensionbox.y = s.geometry.height- itemheight(upper_slot) 
-  mainmenu.extensionbox.height = height
-
-  naughty.notify{text = "y = ".. mainmenu.extensionbox.y .. "[" .. s.geometry.y .. ";" .. s.geometry.height .. "] .. parrent = " .. parent.slot}
-
-  local bottom_pos = itemheight()
-  local top_pos = mainmenu.box.height + bottom_pos
---  mainmenu.box.y = s.geometry.height - top_pos
-
-
-
-
-  mainmenu.extensionbox.visible = true
-end
-
-local function close_extension_menu(something, hit_test)
-  mainmenu.extensionbox.visible = false
-  local coords = mouse.coords()
-
-  --sometimes we just close the menu by force, no hit then
-  if hit_test == nil then
-    return
-  end
-
-
-  naughty.notify {timeout =  300, text = "mouse x = " .. coords.x .. " hit x = " .. hit_test.x .. " w = " .. hit_test.width .. " ww = " .. hit_test.widget_width}
-
---  if arg ~= nil then
---    for i,v in ipairs(arg) do
---      naughty.notify{text = "Arg = " .. tostring(v)}
---    end
---  else
---    naughty.notify {text ="argnil" }
---  end
-
+local function frombottom(items)
+  return mainmenuheight() - itemheight(items)
 end
 
 local function force_close()
@@ -137,38 +75,18 @@ local function clickhandler(sender)
   force_close()
 end
 
-local function hoverhighlight_enter(sender)
-  sender.bg = beautiful.bg_focus
-
-end
-
-local function hoverhighlight_leave(sender)
-
-  sender.bg = beautiful.bg_normal
-
-  local output = ""
-
-  for k,v in pairs(sender) do
-
-    --naughty.notify{ text = tostring(k)}
-  end
-end
 
 local function item_enter(sender)
-
   local depth = sender.entry.depth
+
   mainmenu.displaystate.openpath[depth] = sender.entry
   mainmenu.displaystate.openpath[depth+1] = nil
-
-
 
   update_tree_menu()
 end
 
 local function item_leave(sender, hit_data)
-
   local depth = sender.entry.depth
-
   local coords = mouse.coords()
 
   if coords.x >= hit_data.width then
@@ -176,8 +94,6 @@ local function item_leave(sender, hit_data)
   end
 
   mainmenu.displaystate.openpath[depth] = nil
-  --TODO: clear above
-
 
   update_tree_menu()
 end
@@ -190,7 +106,6 @@ local function try_load_icon(icon)
   local icon_path = menubar.utils.lookup_icon(icon)
 
   if icon_path == nil then
-    --naughty.notify{text = "Did not find icon path for " .. icon}
     return nil
   end
 
@@ -199,7 +114,6 @@ local function try_load_icon(icon)
   if img == nil then
     naughty.notify {text = "Did not load icon at " .. icon_path}
   end
-
 
   return img
 end
@@ -290,12 +204,6 @@ local function get_category_entry(category_name)
     }
 
     entry.display_item.entry = entry
-    --entry.display_item:connect_signal("mouse::enter", function(sender)
-    --  naughty.notify {text = "Hover!"}
-    --   open_extension_menu(sender.entry.children, sender.entry)
-    --
-    --end)
-    --entry.display_item:connect_signal("mouse::leave", close_extension_menu )
 
     mainmenu.categories[category_name] = entry
     table.insert(mainmenu.menutree, entry)
@@ -306,16 +214,6 @@ local function get_category_entry(category_name)
 end
 
 local function file_callback(programs)
-  --naughty.notify{text = "Found " .. #programs .. " programs"}
-  for _, program in pairs(programs) do
-    for z,q in pairs(program) do
-      if categories[z] == nil then
-        categories[z] = {}
-        --naughty.notify {text = "Key: " .. z, timeout = 30}
-      end
-    end
-
-    --naughty.notify {text = "Before " .. tostring(program.Name)}
     local entry = entry_create_from_program(program)
 
     local categories = program.Categories
@@ -330,10 +228,6 @@ local function file_callback(programs)
       end
     end
 
-
-
-    --naughty.notify {text = "Created " .. tostring(program.Name)}
-
     if category ~= nil then
       local category_entry = get_category_entry(category)
 
@@ -342,24 +236,8 @@ local function file_callback(programs)
     else
       table.insert(mainmenu.menutree, entry)
     end
-    --naughty.notify {text = "After " ..tostring(program.Name)}
-
-
-    --naughty.notify {text = tostring(v)}
   end
 end
-
-
-
-
-local function mainmenuheight()
-  return itemheight(2 + min(#mainmenu.menutree, settings.desktop.startmenuentries))
-end
-
-local function frombottom(items)
-  return mainmenuheight() - itemheight(items)
-end
-
 
 local function input_handler_state()
   return {
@@ -383,8 +261,6 @@ local function input_handler(mod, key, event)
     ["Right"] = function() if mainmenu.input_state.cursor_pos < mainmenu.input_state.text:len() +1 then
         mainmenu.input_state.cursor_pos = mainmenu.input_state.cursor_pos + 1 end
     end,
-
-
   }
 
   local handler = handlers[key]
@@ -401,19 +277,16 @@ local function input_handler(mod, key, event)
     naughty.notify( {text = "non function handler for " .. key})
   end
 
-
   --display updated state
   mainmenu.textbox.markup = "<b>" .. mainmenu.input_state.text .. "</b>"
-
-  
 end
 
 --start of new lazy tree based system
 
 function log(text)
   naughty.notify {text = text}
-
 end
+
 local function list_first_n(list, n)
   local r = {}
   for i, v in ipairs(list) do
@@ -435,15 +308,13 @@ local function entry_ensure_display_item(entry)
 
 end
 
-
-
 local function set_widget_entries(widget, entries)
   widget:reset()
   for i, entry in ipairs(entries) do
     entry.display_item.bg = beautiful.bg_normal
     entry_ensure_display_item(entry)
     entry.display_item.point = {y = itemheight(i-1), x = 0}
-    entry.slot = #entries - 1
+    entry.slot = i - 1
     widget:add(entry.display_item)
   end
 end
@@ -463,28 +334,31 @@ end
 
 local function get_or_create_extension_widget(depth)
   if mainmenu.displaystate.extensions[depth] == nil then
-
     local widget = wibox.layout {
       layout = wibox.layout.manual
     }
-    
+
     mainmenu.displaystate.extensions[depth] = {
       widget = widget,
       box = wibox {
         ontop = true,
         width = beautiful.menu_width,
-        y = beautiful.menu_width * depth,
-        x = 400, --placeholder
+        y = 400, --placeholder, remove?
+        x = beautiful.menu_width * depth,
         widget = widget
       }
     }
-   end
+  end
 
   local extension = mainmenu.displaystate.extensions[depth]
   extension.box.visible = true
-  log("foo")
   return extension
+end
 
+local function close_extensions_above(level)
+  for i=level, #mainmenu.displaystate.extensions do
+    mainmenu.displaystate.extensions[i].box.visible = false
+  end
 end
 
 local function update_menu_level(list, widget, focus)
@@ -506,13 +380,14 @@ function update_tree_menu()
   update_menu_level(mainmenu.menutree, mainmenu.listwidget, mainmenu.displaystate.openpath[1])
 
   local i = 1
+  local oldy = mainmenu.box.y
 
   while mainmenu.displaystate.openpath[i] ~= nil  do
-  --for i, element in ipairs(mainmenu.displaystate.openpath) do
-
     local element = mainmenu.displaystate.openpath[i]
     if element.children ~= nil and #element.children >= 1 then
       local extension = get_or_create_extension_widget(i)
+      local newy = oldy + itemheight(element.slot)
+      extension.box.y = newy
       extension.box.height = itemheight(math.min(#element.children, settings.desktop.startmenuentries))
       update_menu_level(element.children, extension.widget, mainmenu.displaystate.openpath[i+1])
     end
@@ -520,7 +395,7 @@ function update_tree_menu()
   end
 
 
-  --close_extensions_above(i -- -1?)
+  close_extensions_above(i) -- -1?)
 
 
 end
@@ -531,7 +406,6 @@ local function ensure_init()
     return
   end
   mainmenu.init = 1
-
 
   mainmenu.listwidget = wibox.layout {
     layout = wibox.layout.manual,
@@ -549,11 +423,7 @@ local function ensure_init()
     forced_height = itemheight(1),
     forced_width = beautiful.menu_width - dpi(4)
   }
-  
-  --mainmenu.textbox.point = {x = 000, y = frombottom(2) }
-  --mainmenu.textbox.forced_width = beautiful.menu_width
-  --mainmenu.textbox.forced_height = itemheight(1)
-  
+
   mainmenu.mainmenuwidget = wibox.layout{
     layout =  wibox.layout.manual,
     mainmenu.textbox,
@@ -571,25 +441,7 @@ local function ensure_init()
       widget = mainmenu.mainmenuwidget
   })
 
-
-  mainmenu.extensionwidget = wibox.layout {
-    layout = wibox.layout.manual
-  }
-
-
-  mainmenu.extensionbox = wibox {
-    ontop = true,
-    width = beautiful.menu_width,
-    height = 30,
-    y = beautiful.menu_width,
-    x = 400,
-    visible = false,
-    widget = mainmenu.extensionwidget
-  }
-
 end
-
-
 
 --function called just before the main menu opens, to ensure everything is in correct state
 local function mainmenu_onopen()
@@ -601,33 +453,19 @@ local function mainmenu_onopen()
   local top_pos = mainmenu.box.height + bottom_pos
   mainmenu.box.y = s.geometry.height - top_pos
 
+  --Reset display
+  update_tree_menu()
+
   --Reset omnibox
   mainmenu.input_state = input_handler_state()
   mainmenu.textbox.markup = ""
   awful.keygrabber.run(input_handler)
-
-  --Reset display
-  local todisplay = {}
-
-  for i, v in ipairs(mainmenu.menutree) do
-    table.insert(todisplay, v)
-    if i >= settings.desktop.startmenuentries then
-      break
-    end
-  end
-  --set_display_entries(todisplay)
-  update_tree_menu()
-  
-
-
 end
 
 local function mainmenu_onclose()
   awful.keygrabber.stop(input_handler)
-
-  close_extension_menu()
+  close_extensions_above(1)
 end
-
 
 function mainmenu.toggle()
   ensure_init()
