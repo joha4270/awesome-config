@@ -137,7 +137,8 @@ myawesomemenu = {
 }
 
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu },
-                                    { "open terminal", settings.terminal }
+                            { "open terminal", settings.terminal },
+                            { "Editor", editor_cmd}
                                   }
                         })
 
@@ -577,7 +578,14 @@ client.connect_signal("request::titlebars", function(c)
             layout = wibox.layout.fixed.horizontal()
         },
         layout = wibox.layout.align.horizontal
-    }
+                              }
+
+
+    -- Hide the menubar if we are not floating
+    local l = awful.layout.get(c.screen)
+    if not (l.name == "floating" or c.floating) then
+        awful.titlebar.hide(c)
+    end
 end)
 
 client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
