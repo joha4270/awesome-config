@@ -13,9 +13,10 @@ return {
   terminal = "xfce4-terminal",
   desktop = {
     paths = {
-      "/usr/share/applications"
+      "/usr/share/applications",
+      "/disks/1/home/joha/Desktop"
     },
-    startmenuentries = 20
+    startmenuentries = 30
   }
 
 

@@ -33,7 +33,7 @@ local mainmenu = {
 }
 
 --forward function decleartions
-local update_tree_menu, log
+local update_tree_menu, log, close_extensions_above
 
 
 local function min(a, b)
@@ -62,11 +62,18 @@ local function force_close()
   if mainmenu.box.visible then
     mainmenu.toggle()
   end
+  close_extensions_above(1)
 end
 
 local function runentry(entry)
-  naughty.notify{text = "Starting " .. entry.name .. " with command \"" .. entry.exec .. "\""}
-  awful.spawn(entry.exec)
+
+  local exec = entry.exec
+  exec = exec:gsub("%%U", "")
+  exec = exec:gsub("%%u", "")
+  exec = exec:gsub("%%F", "")
+
+  --naughty.notify{text = "Starting " .. entry.name .. " with command \"" .. exec .. "\""}
+  awful.spawn(exec)
 end
 
 local function clickhandler(sender)
@@ -213,32 +220,6 @@ local function get_category_entry(category_name)
   return mainmenu.categories[category_name]
 end
 
-local function file_callback(programs)
-  for _, program in pairs(programs) do
-    local entry = entry_create_from_program(program)
-
-    local categories = program.Categories
-    local category = nil
-
-
-    if categories ~= nil then
-      --naughty.notify {text = "Category of " .. categories}
-      for str in categories:gmatch("[^;]+") do
-        category = str
-        break
-      end
-    end
-
-    if category ~= nil then
-      local category_entry = get_category_entry(category)
-
-      table.insert(category_entry.children, entry)
-
-    else
-      table.insert(mainmenu.menutree, entry)
-    end
-    end
-end
 
 local function input_handler_state()
   return {
@@ -356,7 +337,7 @@ local function get_or_create_extension_widget(depth)
   return extension
 end
 
-local function close_extensions_above(level)
+function close_extensions_above(level)
   for i=level, #mainmenu.displaystate.extensions do
     mainmenu.displaystate.extensions[i].box.visible = false
   end
@@ -479,7 +460,38 @@ function mainmenu.toggle()
   mainmenu.box.visible = not mainmenu.box.visible
 end
 
+
+local function file_callback(programs)
+  for _, program in pairs(programs) do
+    --log("found " .. program.Name)
+    local entry = entry_create_from_program(program)
+
+    local categories = program.Categories
+    local category = nil
+
+
+    if categories ~= nil then
+      --naughty.notify {text = "Category of " .. categories}
+      for str in categories:gmatch("[^;]+") do
+        category = str
+        break
+      end
+    end
+
+    if category ~= nil then
+      local category_entry = get_category_entry(category)
+
+      table.insert(category_entry.children, entry)
+
+    else
+      table.insert(mainmenu.menutree, entry)
+    end
+  end
+end
+
+
 for _, v in pairs(settings.desktop.paths) do
+  log("checking " .. v)
   menubar.utils.parse_dir(v, file_callback)
 end
 

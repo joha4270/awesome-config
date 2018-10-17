@@ -263,8 +263,6 @@ root.buttons(gears.table.join(
 
 -- {{{ Key bindings
 globalkeys = gears.table.join(
-  awful.key({                   }, "Super_L",   mainmenu.toggle,
-            {description="Open the main menu", group="awesome"}),
 
 
     awful.key({ modkey,           }, "s",      hotkeys_popup.show_help,
@@ -331,10 +329,10 @@ globalkeys = gears.table.join(
               {description = "increase the number of columns", group = "layout"}),
     awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1, nil, true)    end,
               {description = "decrease the number of columns", group = "layout"}),
-    awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
-              {description = "select next", group = "layout"}),
-    awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(-1)                end,
-              {description = "select previous", group = "layout"}),
+    --awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
+    --          {description = "select next", group = "layout"}),
+    --awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(-1)                end,
+    --          {description = "select previous", group = "layout"}),
 
     awful.key({ modkey, "Control" }, "n",
               function ()
@@ -363,7 +361,13 @@ globalkeys = gears.table.join(
               {description = "lua execute prompt", group = "awesome"}),
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end,
-              {description = "show the menubar", group = "launcher"})
+      {description = "show the menubar", group = "launcher"}),
+
+    awful.key( {modkey}, "space", function() mykeyboardlayout.next_layout() end,
+      {description = "Change the keyboard layout", group="client"}),
+
+    awful.key({                   }, "Super_L",   mainmenu.toggle,
+      {description="Open the main menu", group="awesome"})
 )
 
 clientkeys = gears.table.join(
@@ -529,7 +533,14 @@ client.connect_signal("manage", function (c)
     -- i.e. put it at the end of others instead of setting it master.
     -- if not awesome.startup then awful.client.setslave(c) end
 
-    naughty.notify{text = "A new client appears"}
+
+ --                       [[local str = ""
+   --                     for k, v in pairs(c) do
+     --                     str = str + string(k) + ":" + string(v) + "\n"
+                        --                 end
+
+         --                 naughty.notify{text = "A new client appears\n" + str}]]
+
 
     if awesome.startup and
       not c.size_hints.user_position
