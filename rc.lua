@@ -16,10 +16,12 @@ require("awful.hotkeys_popup.keys")
 
 local settings = require("settings")
 local wallpaper = require("wallpaper")
-local mainmenu = require "mainmenu"
+--local mainmenu = require "mainmenu"
+
+require "mainmenu_generator"
 
 
-local awesome_directory = "~/.config/awesome/"
+local awesome_directory = "/home/joha/.config/awesome/"
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -239,7 +241,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     -- Add widgets to the wibox
     s.mywibox:setup {
-        layout = wibox.layout.align.horizontal,
+      layout = wibox.layout.align.horizontal,
         { -- Left widgets
           layout = wibox.layout.fixed.horizontal,
           s.mainmenubutton,
@@ -255,6 +257,7 @@ awful.screen.connect_for_each_screen(function(s)
             s.mylayoutbox,
         },
     }
+    s.mywibox.ontop = true
 end)
 -- }}}
 
@@ -368,10 +371,14 @@ globalkeys = gears.table.join(
     awful.key({ modkey }, "p", function() menubar.show() end,
       {description = "show the menubar", group = "launcher"}),
 
-    awful.key( {modkey}, "space", function() mykeyboardlayout.next_layout() end,
-      {description = "Change the keyboard layout", group="client"}),
-
-    awful.key({                   }, "Super_L",   mainmenu.toggle,
+    --awful.key( {modkey}, "space", function() mykeyboardlayout.next_layout() end,
+    --  {description = "Change the keyboard layout", group="client"}),
+    
+    awful.key({                   }, "Super_L",
+      function( a)
+        naughty.notify{text=gears.debug.dump_return(a, "a1", 5)}
+        mainmenu.toggle()
+      end,
       {description="Open the main menu", group="awesome"})
 )
 
