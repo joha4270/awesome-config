@@ -11,13 +11,14 @@ local wallpaper = {
 
 function wallpaper.reinitialize()
   wallpaper.paths = nil
+  naughty.notify{text="starting wallpaper " .. settings.wallpaper.path}
   local error = awful.spawn.easy_async("ls -1 " .. settings.wallpaper.path,
                          function(stdout, stderr, reason, exit_code)
                            if not (foo == nil or foo == '') then
                              naughty.notify {text = ">" .. stderr .. "<"} 
                            else
                              wallpaper.paths = {}
-
+                             naughty.notify{text = stdout}
                              for file in stdout:gmatch("[^\r\n]+") do
                                table.insert(wallpaper.paths, settings.wallpaper.path .. file)
                              end
@@ -54,6 +55,7 @@ local function random_image()
   return gears.surface.load(path)
 
 
+
 end
 
 function wallpaper.set(s)
@@ -61,7 +63,7 @@ function wallpaper.set(s)
     table.insert(wallpaper.queue, s)
     return;
   end
-
+  --naughty.notify{text="setting wallpaper"}
   gears.wallpaper.maximized(random_image(), s, true)
 end
 
@@ -72,6 +74,7 @@ gears.timer {
   autostart = true,
   callback = function()
     for s in screen do
+      --naugthy.notify{text="calling .set"}
       wallpaper.set(s)
     end
   end

@@ -19,7 +19,7 @@ local wallpaper = require("wallpaper")
 local mainmenu = require "mainmenu"
 
 
-local awesome_directory = "/disks/1/home/joha/.config/awesome/"
+local awesome_directory = "~/.config/awesome/"
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -138,7 +138,12 @@ myawesomemenu = {
 
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu },
                             { "open terminal", settings.terminal },
-                            { "Editor", editor_cmd}
+                            { "Editor", editor_cmd},
+                            { "Next background", function()
+                                for s in screen do
+                                  wallpaper.set(s)
+                                end
+                            end}
                                   }
                         })
 
