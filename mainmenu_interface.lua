@@ -6,9 +6,12 @@ awful = require "awful"
 
 local mainmenu = {
   open = false,
+  treepath = {}, treepath_actual = {},
   tree = {},
   containers = {}
 }
+
+local activate
 
 local function log(text)
   naughty.notify{text = text, timeout = 300}
@@ -20,6 +23,38 @@ local function itemheight(items)
   return beautiful.menu_height * items
 end
 
+local function list_remove_after(list, index)
+  --log("list_remove_after(..., " .. index .. ")")
+  for i = index,#list do
+    --log("removing " .. i)
+  end
+end
+--- Updates the highlighting in items in mainmenu.tree, based on the values in mainmenu.treepath
+local function update_highlighting()
+  local index = 1
+  local max = math.max(#mainmenu.treepath, #mainmenu.treepath_actual)
+
+  --log(gears.debug.dump_return(mainmenu.treepath) .. "->" .. gears.debug.dump_return(mainmenu.treepath_actual))
+
+  local working = mainmenu.tree
+  --log("highlight depth " .. max)
+  --for every level in either treepath or actual, check if the highlight is different, if so, update
+  for index = 1,max do
+    --log("highlighting at " .. index)
+    if mainmenu.treepath[index] ~= mainmenu.treepath_actual[index] then
+      working[mainmenu.treepath[index]].display.bg = beautiful.bg_focus
+      activate(working[mainmenu.treepath[index]])
+
+      if mainmenu.treepath_actual[index] then
+        working[mainmenu.treepath_actual[index]].display.bg = beautiful.bg_normal
+      else
+        --TODO: remove deeper background?
+      end
+
+      mainmenu.treepath_actual[index] = mainmenu.treepath[index]
+    end
+  end
+end
 
 local function item_ensure_display(item)
   if item.display then
@@ -88,19 +123,24 @@ local function item_ensure_display(item)
     widget = wibox.container.background
   }
 
-  --item.display.item = item
+  item.display.item = item
 
 
   item.display:connect_signal(
     "mouse::enter",
     function(sender)
-      sender.bg = beautiful.bg_focus
+      --log("enter")
+      mainmenu.treepath[sender.item.depth-1] = sender.item.slot
+      list_remove_after(mainmenu.treepath, sender.item.depth)
+      update_highlighting()
     end
   )
   item.display:connect_signal(
     "mouse::leave",
     function(sender, hit_data)
-      sender.bg = beautiful.bg_normal
+      --log("leave")
+      list_remove_after(mainmenu.treepath, sender.item.depth-1)
+      update_highlighting()
     end
   )
 
@@ -109,6 +149,7 @@ end
 
 --- Creates or reuses a container for placing items. Before returning it is sized correctly to the amount of items
 local function get_container_for(items)
+  log("getting container for level " .. items.depth)
   local pair = mainmenu.containers[items.depth]
   if not pair then
 
@@ -134,7 +175,15 @@ local function get_container_for(items)
       }
       
       log("depth > 1 container")
+      pair.box = wibox {
+        ontop = true,
+        --x, y = set later,
+        width = beautiful.menu_width,
+        --height = set later
+        visible = false,
+        widget = pair.container
 
+      }
 
     end
 
@@ -159,9 +208,16 @@ local function container_set_items(container, items, instant)
 
 end
 
-local function activate(items)
+function activate(items)
+  log("activating " .. tostring(items))
   local container = get_container_for(items)
   container_set_items(container, items, true)
+
+  if items.depth > 1 then
+    mainmenu.containers[items.depth].visible = true;
+    mainmenu.containers[items.depth].x = 100
+    mainmenu.containers[items.depth].y = 900
+  end
 end
 
 --- Initializes or re-initializes the central part of the main window,
@@ -202,6 +258,8 @@ local function mainmenu_open()
 
   mainmenu.mainbox.x = s.geometry.x
   mainmenu.mainbox.y = ypos
+
+  log("mainbox = " .. mainmenu.mainbox.x .. ", " .. mainmenu.mainbox.y)
 
   activate(mainmenu.tree)
   mainmenu.mainbox.visible = true
