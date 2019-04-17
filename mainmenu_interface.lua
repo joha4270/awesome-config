@@ -32,18 +32,23 @@ end
 --- Updates the highlighting in items in mainmenu.tree, based on the values in mainmenu.treepath
 local function update_highlighting()
   local index = 1
+  log(#mainmenu.treepath .. "/" .. #mainmenu.treepath_actual )
   local max = math.max(#mainmenu.treepath, #mainmenu.treepath_actual)
 
-  --log(gears.debug.dump_return(mainmenu.treepath) .. "->" .. gears.debug.dump_return(mainmenu.treepath_actual))
+
+  log(gears.debug.dump_return(mainmenu.treepath) .. "->" .. gears.debug.dump_return(mainmenu.treepath_actual))
 
   local working = mainmenu.tree
-  --log("highlight depth " .. max)
+  log("highlight depth " .. max)
   --for every level in either treepath or actual, check if the highlight is different, if so, update
   for index = 1,max do
-    --log("highlighting at " .. index)
-    if mainmenu.treepath[index] ~= mainmenu.treepath_actual[index] then
-      working[mainmenu.treepath[index]].display.bg = beautiful.bg_focus
-      activate(working[mainmenu.treepath[index]])
+    log("highlighting at " .. index)
+    local workingindex = mainmenu.treepath[index]
+    if workingindex ~= mainmenu.treepath_actual[index] then
+      
+      working[workingindex].display.bg = beautiful.bg_focus
+      --log("activating " .. )
+      activate(working[workingindex])
 
       if mainmenu.treepath_actual[index] then
         working[mainmenu.treepath_actual[index]].display.bg = beautiful.bg_normal
@@ -51,8 +56,9 @@ local function update_highlighting()
         --TODO: remove deeper background?
       end
 
-      mainmenu.treepath_actual[index] = mainmenu.treepath[index]
+      mainmenu.treepath_actual[index] = workingindex
     end
+    working = working[workingindex]
   end
 end
 
@@ -129,7 +135,7 @@ local function item_ensure_display(item)
   item.display:connect_signal(
     "mouse::enter",
     function(sender)
-      --log("enter")
+      log("enter " .. sender.item.depth)
       mainmenu.treepath[sender.item.depth-1] = sender.item.slot
       list_remove_after(mainmenu.treepath, sender.item.depth)
       update_highlighting()
@@ -173,7 +179,6 @@ local function get_container_for(items)
         visible = false,
         widget = pair.container
       }
-      
       log("depth > 1 container")
       pair.box = wibox {
         ontop = true,
@@ -191,7 +196,7 @@ local function get_container_for(items)
 
   end
   pair.container.height = itemheight(#items)
-  return pair.container
+  return pair
 end
 
 local function container_set_items(container, items, instant)
@@ -210,13 +215,18 @@ end
 
 function activate(items)
   log("activating " .. tostring(items))
-  local container = get_container_for(items)
-  container_set_items(container, items, true)
+  local pair = get_container_for(items)
+  container_set_items(pair.container, items, true)
+
+  local s = awful.screen.focused()
 
   if items.depth > 1 then
-    mainmenu.containers[items.depth].visible = true;
-    mainmenu.containers[items.depth].x = 100
-    mainmenu.containers[items.depth].y = 900
+
+    pair.box.visible = true
+    pair.box.x = s.geometry.x + beautiful.menu_width * (items.depth - 1)
+    pair.box.y = 900
+    pair.box.height = itemheight(#items)
+
   end
 end
 
@@ -225,13 +235,14 @@ end
 -- and setting all those up correctly
 local function reinit()
   if not mainmenu.maincontainer then
-    local container = get_container_for(mainmenu.tree)
+    local pair = get_container_for(mainmenu.tree)
     mainmenu.maincontainer = wibox.layout {
       layout = wibox.layout.manual,
       point = {x = 0, y = 0},
       forced_width = beautiful.menu_width,
       --forced_height = set later
-      get_container_for(mainmenu.tree)
+      --get_container_for(mainmenu.tree)
+      pair.container
     }
     mainmenu.mainbox = wibox{
       ontop = true,
